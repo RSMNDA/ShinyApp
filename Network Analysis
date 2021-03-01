@@ -1,1 +1,13 @@
 library(igraph)
+
+all.products <- dt.supply.chain[, list(name=unique(`Product Name`), type=TRUE)]
+all.customers <- dt.supply.chain[, list(name=unique(`Customer Id`), type=FALSE)]
+all.vertices <- rbind(all.products, all.customers)
+g <- graph.data.frame(dt.supply.chain[, list(`Product Name`, `Customer Id`)], directed=FALSE, vertices=all.vertices)
+summary(g)
+g.products <- bipartite.projection(g)$proj2
+summary(g.products)
+plot(g.products, vertex.label = NA)
+diameter(g.products)
+get.diameter(g.products)
+degree(g.products)
