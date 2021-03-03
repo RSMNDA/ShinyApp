@@ -52,6 +52,7 @@ g.products <- bipartite.projection(g.supply.chain)$proj2
 summary(g.products)
 plot(g.products, vertex.label = NA, margin = 0, edge.arrow.size = 0, edge.arrow.width = 0, vertex.size = 5 )
 
+# Descriptives
 diameter(g.products) #5
 get.diameter(g.products)
 average.path.length(g.products) # average path length
