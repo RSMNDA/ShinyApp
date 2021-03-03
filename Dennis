@@ -1,2 +1,55 @@
-Background picture used in proposal: https://user-images.githubusercontent.com/68869483/109824398-14ddea80-7c39-11eb-80e6-5bc797daad19.jpg
+#Background picture used in proposal: https://user-images.githubusercontent.com/68869483/109824398-14ddea80-7c39-11eb-80e6-5bc797daad19.jpg
+
+
+library(data.table)     # Run once per session
+library(ggplot2)        # Run once per session
+library(igraph)         # Run once per session
+
+DataCoSupplyChainDataset <- read.csv("~/NDA/Group assignment/DataCoSupplyChainDataset.csv", comment.char="#")
+dt.chain <- data.table(DataCoSupplyChainDataset) 
+
+# normalize names to comply with NDA style guide
+setnames(dt.chain , names(dt.chain ), 
+         tolower(gsub(".", "_", names(dt.chain ), fixed=TRUE))) 
+
+new.columns <- do.call( rbind , strsplit( as.character(dt.chain$order_date__dateorders_ ) , " " ) )
+cbind(dt.chain , time = new.columns[,2] , Date = new.columns[,1] )
+dt.supply.chain <- cbind(dt.chain , time = new.columns[,2] , date = new.columns[,1] )
+dt.supply.chain
+
+# Network analysis
+# Homophily
+# Are two nodes more likely to be connected if they have the same characteristics (homophily)?
+
+unique(dt.supply.chain$order_item_id) 
+
+dt.country.customer.order <- dt.supply.chain[, list(category_name, customer_country, order_country)]
+
+
+# Network Exploration
+# visualization: benefit_per_order in relation to order_country and category_name
+# select category_name
+# Select order_country
+
+summary(dt.supply.chain$benefit_per_order)
+# Customer country: Country where the customer made the purchase
+unique(dt.supply.chain$customer_country) # Only 2 customer countries: Puerto Rico and EE. UU. (USA)
+
+# Order country: Destination country of the order
+unique(dt.supply.chain$order_country)[order(letters[1:26])] #164 order countries #[order(letters[1:26])] does not order alphabetically
+
+dt.bpo.order.category <- dt.supply.chain[, list(benefit_per_order, category_name, order_country, customer_country)]
+dt.bpo.order.category
+
+# Average benefit_per_order per category_name per order_country
+category.names <- c(unique(dt.supply.chain$category_name))
+category.names
+
+dt.bpo.order.category[, sum(benefit_per_order), category_name == "Sporting Goods"] #category_name for each of the 50 categories as selectable drop down menu # List of 50 is too much.
+#need to group categories together so list is smaller. Example categories: Sports, Electronica, Clothing
+
+
+
+
+
 
