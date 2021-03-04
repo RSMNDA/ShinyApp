@@ -1,0 +1,81 @@
+# Set up the data ----
+library(data.table)
+dt.supply.chain <- fread("data/DataCoSupplyChainDataset.csv")
+dt.supply.chain <- setnames(dt.supply.chain, names(dt.supply.chain), tolower(gsub(" ", "_", names(dt.supply.chain), fixed = TRUE)))
+
+# Set up our network ----
+library(igraph)
+all.products <- dt.supply.chain[, list(name=unique(product_name), type=TRUE)]
+all.customers <- dt.supply.chain[, list(name=unique(customer_id), type=FALSE)]
+all.vertices <- rbind(all.products, all.customers)
+g <- graph.data.frame(dt.supply.chain[, list(product_name, customer_id)], directed=FALSE, vertices=all.vertices)
+g.products <- bipartite.projection(g)$proj2
+
+library(shiny)
+
+# Define UI for app  ----
+ui <- fluidPage(
+  # Setting up the tab navigation ----
+  tabsetPanel(
+    tabPanel(title = "BUNDLEMANIA",
+  # App title ----
+      titlePanel("A network of online retail goods."),
+      tags$p("Hi, this is our App for the NDA project.
+         Below, you can see an example graph. Feel free to play around with it.
+         Also, enjoy this sexy goat."),
+      tags$img(height = 320, width = 400, src = "Sexy_Goat.jpg"),
+  # Sidebar layout with input and output definitions ----
+      sidebarLayout(
+    # Sidebar panel for inputs ----
+        sidebarPanel(
+      # Input: Slider for the number of bins ----
+          sliderInput(inputId = "bins",
+                  label = "Number of bins:",
+                  min = 1,
+                  max = 50,
+                  value = 30)
+        ),
+    # Main panel for displaying outputs ----
+        mainPanel(
+      # Output: Histogram ----
+          plotOutput(outputId = "distPlot")
+        )
+      )
+    ),
+    tabPanel(title = "Descriptive Statistics",
+      titlePanel("Descriptive Statistics")
+    ),
+    tabPanel(title = "Network Exploration",
+      titlePanel("Network Exploration")
+    ),
+    tabPanel(title = "Network Analysis",
+      titlePanel("Network Analysis")
+    )
+  )
+)
+
+# Define server logic required to draw a histogram ----
+server <- function(input, output) {
+  
+  # Histogram of the Old Faithful Geyser Data ----
+  # with requested number of bins
+  # This expression that generates a histogram is wrapped in a call
+  # to renderPlot to indicate that:
+  #
+  # 1. It is "reactive" and therefore should be automatically
+  #    re-executed when inputs (input$bins) change
+  # 2. Its output type is a plot
+  output$distPlot <- renderPlot({
+    
+    x    <- faithful$waiting
+    bins <- seq(min(x), max(x), length.out = input$bins + 1)
+    
+    hist(x, breaks = bins, col = "#75AADB", border = "white",
+         xlab = "Waiting time to next eruption (in mins)",
+         main = "Histogram of waiting times")
+    
+  })
+  
+}
+
+shinyApp(ui = ui, server = server)
