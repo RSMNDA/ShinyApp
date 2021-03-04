@@ -18,14 +18,6 @@ cbind(dt.chain , time = new.columns[,2] , Date = new.columns[,1] )
 dt.supply.chain <- cbind(dt.chain , time = new.columns[,2] , date = new.columns[,1] )
 dt.supply.chain
 
-
-# Some statsitcs ---------------------------
-# orders per month
-dt.supply.chain$date <- as.Date(dt.supply.chain$date, '%d/%m/%Y')
-ggplot(dt.supply.chain) + aes(x = date) + geom_bar()
-
-#confirms that this is a super random data set
-
 # Create graph  ---------------------------
 # only for a particular day
 dt.supply.chain.2015 <- filter(dt.supply.chain, date == "1/1/2015" )
