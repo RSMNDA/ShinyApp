@@ -1,0 +1,139 @@
+setwd("~/Desktop/University/MSC/Electives/NDA/Shiny app")
+library(data.table)
+dt.supply.chain <- as.data.table(DataCoSupplyChainDataset)
+
+# Number of observations:
+length(dt.supply.chain$Type)
+# 180519
+
+# Unique shipping countries:
+unique(dt.supply.chain$`Customer Country`)
+# Puerto Rico and EE. UU., which is the Spanish version of USA.
+# Seeing as Puerto Rico is part of the US, the following shall be more useful:
+head(unique(dt.supply.chain$`Customer State`))
+length(unique(dt.supply.chain$`Customer State`))
+# Orders have been shipped from 46 unique US states, such as: Puerto Rico,
+# California, New York, Florida, Massachusetts and Illinois.
+
+# Unique destination countries:
+head(unique(dt.supply.chain$`Order Country`))
+length(unique(dt.supply.chain$`Order Country`))
+# There are 164 distinct destination countries, such as Indonesia, India,
+# Australia, China, Japan and South Korea.
+
+# The shipping US stores belong to...
+head(unique(dt.supply.chain$`Department Name`))
+length(unique(dt.supply.chain$`Department Name`))
+# 11 different categories, such as fitness, apparel, golf and footwear.
+
+# The distinct products shipped:
+unique(dt.supply.chain$`Product Name`)
+length(unique(dt.supply.chain$`Product Name`))
+# 118 distinct products have shipped, such as smart watches, golfballs, sports
+# apparel, DVDs and video games.
+
+# Some descriptives about the product price:
+mean(dt.supply.chain$`Product Price`)
+min(dt.supply.chain$`Product Price`)
+max(dt.supply.chain$`Product Price`)
+sd(dt.supply.chain$`Product Price`)
+# The mean product price is $141.23, with the cheapest product costing $9.99 and
+# the most expensive being $1999.99. The standard deviation is $139.73.
+
+# However, the above prices were often discounted!
+mean(dt.supply.chain$`Order Item Discount Rate`)
+min(dt.supply.chain$`Order Item Discount Rate`)
+max(dt.supply.chain$`Order Item Discount Rate`)
+sd(dt.supply.chain$`Order Item Discount Rate`)
+# The average discount was 10% on the product price. The maximum was 25%, with a
+# standard deviation of 7%.
+
+# Oftentimes, sales even came at a big loss. Here are some profit indicators:
+mean(dt.supply.chain$`Order Profit Per Order`)
+min(dt.supply.chain$`Order Profit Per Order`)
+max(dt.supply.chain$`Order Profit Per Order`)
+sd(dt.supply.chain$`Order Profit Per Order`)
+# The average profit per sale was $21.97. The highest earnings per sale were
+# $911.8. The biggest loss comes in at $4275. The standard deviation is $104.43.
+
+
+summary(DataCoSupplyChainDataset$Days.for.shipping..real.)
+summary(DataCoSupplyChainDataset$Days.for.shipment..scheduled.)
+# It's interesting that the median is higher for scheduled, but lower for real shipping dates,
+# whereas the mean is higher for real than scheduled. The Median for scheduled is = to the
+# max value, which means that there are a lot of shipments scheduled to have 4 days of shipping
+
+# Late delivery per order ID
+# Add new column for delivery, if late or not late
+
+sum(str_count(dt.supply.chain$Delivery.Status, "Advance shipping"))
+#41592 products arrive earlier as scheduled
+sum(str_count(dt.supply.chain$Delivery.Status, "Shipping on time"))
+#32196 products arrive on time
+sum(str_count(dt.supply.chain$Delivery.Status, "Late delivery"))
+# 98977 products arrive late
+
+
+#Make 3 data tables with the different shipping methods
+dt.shipment.early <- dt.supply.chain[delivery.status == "Advance shipping"]
+dt.shipment.ontime <- dt.supply.chain[delivery.status == "Shipping on time"]
+dt.shipment.late <- dt.supply.chain[delivery.status == "Late delivery"]
+dt.shipment.canceled <- dt.supply.chain[delivery.status == "Shipping canceled"]
+
+dt.suspected.fraud <- dt.supply.chain[order.status == "SUSPECTED_FRAUD"]
+
+sum(dt.shipment.early$Benefit.per.order)
+summary(dt.shipment.early$Benefit.per.order)
+# Mean 22.49, Max 720, Min -3366, sum = 935225, length = 41592  23.04% of total orders
+sum(dt.shipment.late$Benefit.per.order)
+summary(dt.shipment.late$Benefit.per.order)
+# Min -4274, mean 21.62, Max 911.8, sum = 2140052, length = 98977 54.82% of total orders
+sum(dt.shipment.ontime$Benefit.per.order)
+summary(dt.shipment.ontime$Benefit.per.order) 
+# Min -2592, mean 22.71, max 864, sum = 731143.7, length = 32196  17.84% of total orders
+summary(dt.shipment.canceled$Benefit.per.order)
+# Min -1716, Mean 20.7, Max 675, length 7754                      4.29% of total orders
+
+# So there are 4 levels of delivery status, early, on time, late and canceled
+
+length(unique(dt.shipment.canceled$Product.Name))
+# 110
+length(unique(dt.shipment.early$Product.Name))
+# 118
+length(unique(dt.shipment.late$Product.Name))
+# 118
+length(unique(dt.shipment.ontime$Product.Name))
+# 118
+length(unique(dt.supply.chain$Product.Name))
+# 118
+
+shipment.early <- as.data.frame(table(dt.shipment.early$type))
+shipment.late <- as.data.frame(table(dt.shipment.late$type))
+shipment.canceled <- as.data.frame(table(dt.shipment.canceled$type))
+shipment.ontime <- as.data.frame(table(dt.shipment.ontime$type))
+dt.schedule.type <- cbind(shipment.canceled, shipment.early, shipment.late, shipment.ontime)
+
+#All of the shipments that were early were made with transfer
+# Have a drop down menu to see which delivery status and their type of payment. Are there any other
+# variables to use as well for the delvivery stauts?
+#
+#Drop down Input menu for this, to display some information on the delivery status. Wilh
+# have to see which variables are deemed important and put those all in the table per stauts
+# to the display the tables easily 
+
+ length(unique(dt.shipment.ontime$Order.Country))
+ length(unique(dt.shipment.ontime$Order.Country))
+  length(unique(dt.shipment.early$Order.Country))
+  length(unique(dt.shipment.late$Order.Country))
+ length(unique(dt.shipment.canceled$Order.Country))
+ length(unique(dt.suspected.fraud$Order.Country))
+ length(dt.supply.chain$Order.Country)
+ length(unique(dt.suspected.fraud$Customer.State))
+
+# For suspected fraud, all order status is canceled so maybe the different order status (9 unique variables)
+ # Maybe the order status relates to delivery status
+
+
+table(dt.suspected.fraud$product.category.id)
+table(dt.shipment.ontime$shipping.mode)
+
