@@ -1,7 +1,24 @@
 # Set up the data ----
 library(data.table)
-dt.supply.chain <- fread("data/DataCoSupplyChainDataset.csv")
-dt.supply.chain <- setnames(dt.supply.chain, names(dt.supply.chain), tolower(gsub(" ", "_", names(dt.supply.chain), fixed = TRUE)))
+library(dplyr)
+dt.supply.chain.esp <- fread("data/DataCoSupplyChainDataset.csv")
+dt.supply.chain.esp <- setnames(dt.supply.chain.esp, names(dt.supply.chain.esp), tolower(gsub(" ", "_", names(dt.supply.chain.esp), fixed = TRUE)))
+dt.supply.chain.esp <- dt.supply.chain.esp[, !c("customer_country", "category_name", "order_country")]
+
+# Let's add an ID variable. It's called V1 to allow for merging later.
+V1 = c(1:180519)
+dt.supply.chain.esp <- cbind(dt.supply.chain.esp, V1)
+
+# In the original dataset, the country names are Spanish.
+library(janitor)
+dt.english.country.names <- fread("data/english_country_names.csv")
+dt.english.country.names <- janitor::row_to_names(dt.english.country.names, 1)
+dt.supply.chain <- merge(dt.supply.chain.esp, dt.english.country.names, by = "V1")
+
+# Let's remove some variables.
+dt.supply.chain <- dt.supply.chain[, !c("V1", "customer_country", "customer_email", "customer_password", "department_id", "department_name", "order_item_cardprod_id", "latitude", "longitude", "order_region", "order_state", "order_zipcode", "product_description", "product_image")]
+dt.supply.chain = filter(dt.supply.chain, !is.na(customer_zipcode))
+dt.definitons <- fread("data/DescriptionDataCoSupplyChain.csv")
 
 # Set up our network ----
 library(igraph)
@@ -9,73 +26,87 @@ all.products <- dt.supply.chain[, list(name=unique(product_name), type=TRUE)]
 all.customers <- dt.supply.chain[, list(name=unique(customer_id), type=FALSE)]
 all.vertices <- rbind(all.products, all.customers)
 g <- graph.data.frame(dt.supply.chain[, list(product_name, customer_id)], directed=FALSE, vertices=all.vertices)
-g.products <- bipartite.projection(g)$proj2
+
+# To create the bipartite graph goods projection, much memory is needed.
+# To alleviate the shiny servers from this effort, we created the graph and
+# simply saved it into a csv file, from where it can be reconstructed
+# easily.
+df.products <- read.csv("data/g_products.csv")
+df.products <- df.products[-1]
+g.products <- as.undirected(graph_from_data_frame(df.products))
+
 
 library(shiny)
+library(DT)
+library(ggplot2)
 
 # Define UI for app  ----
-ui <- fluidPage(
-  # Setting up the tab navigation ----
-  tabsetPanel(
-    tabPanel(title = "BUNDLEMANIA",
+ui <- navbarPage(title = "ChainView",
+    tabPanel(title = "Overview",
   # App title ----
-      titlePanel("A network of online retail goods."),
-      tags$p("Hi, this is our App for the NDA project.
-         Below, you can see an example graph. Feel free to play around with it.
-         Also, enjoy this sexy goat."),
-      tags$img(height = 320, width = 400, src = "Sexy_Goat.jpg"),
+      titlePanel("Monitor and improve your supply chain using ChainView."),
+      tags$p("This application was built to explore and analyze the flow of products within the supply chain logistics network. The types of goods include clothing, sporting goods and electronic supplies. The customers are located in the United States & Puerto Rico, whereas the goods are shipped from 164 different countries located in Asia, Europe, North & South America and Europe. In total, 180519 transactions were recorded."),
+      tags$p("To better understand the data and its corresponding network, the 'Descriptive Statistics' tab provides descriptive information regarding the type of transactions, products, order countries, delivery schedule and profitability."),
+      tags$h2("Network Exploration"),
+      tags$p("..."),
+      tags$h2("Managerial Implications"),
+      tags$p("Through the rise of globalization and the ever-increasing quantity of goods being shipped between countries, supply chains have become increasingly complex and difficult to manage. The challenges connected to effectively build and manage a global supply chain have turned into a logistical nightmare. Companies are now exploring big data solutions to shed light on their operations and improve efficiency, whilst lowering their overhead costs. X, provides a solution to this problem, with the use of interactive network exploration techniques. By calculating necessary data-points and information about the logistics network, the decision making of managers is improved. Consequently leading to a more efficient and profitable  supply chain on a global scale."),
   # Sidebar layout with input and output definitions ----
-      sidebarLayout(
-    # Sidebar panel for inputs ----
-        sidebarPanel(
-      # Input: Slider for the number of bins ----
-          sliderInput(inputId = "bins",
-                  label = "Number of bins:",
-                  min = 1,
-                  max = 50,
-                  value = 30)
-        ),
-    # Main panel for displaying outputs ----
-        mainPanel(
-      # Output: Histogram ----
-          plotOutput(outputId = "distPlot")
+    ),
+    navbarMenu(title = "Descriptive Statistics",
+      tabPanel(title = "Variable Definitions",
+        DT::dataTableOutput("definitions_table")
+      ),
+      tabPanel(title = "Categorical Variables",
+        sidebarLayout(
+          sidebarPanel(
+            selectInput(inputId = "cat_descriptives_in", 
+                        label = "Choose a categorical variable to learn more about.",
+                        choices = list("delivery_status", "category_name", "customer_city", "customer_segment", "customer_state", "market", "order_city", "order_country", "order_status", "product_name"))
+          ),
+          mainPanel(
+            DT::dataTableOutput("cat_descriptives"),
+          )
+        )
+      ),
+      tabPanel(title = "Numerical Variables",
+        sidebarLayout(
+          sidebarPanel(
+            selectInput(inputId = "num_descriptives_in", 
+                        label = "Choose a numerical variable to learn more about.",
+                        choices = list("days_for_shipping_(real)", "days_for_shipment_(scheduled)", "benefit_per_order", "sales_per_customer", "order_item_discount_rate", "product_price", "order_item_quantity"))
+          ),
+          mainPanel(
+            verbatimTextOutput("num_descriptives"),
+          )
         )
       )
-    ),
-    tabPanel(title = "Descriptive Statistics",
-      titlePanel("Descriptive Statistics")
     ),
     tabPanel(title = "Network Exploration",
       titlePanel("Network Exploration")
     ),
     tabPanel(title = "Network Analysis",
       titlePanel("Network Analysis")
+    ),
+    tabPanel(title = "About Us",
+      titlePanel("About Us")
     )
   )
-)
 
 # Define server logic required to draw a histogram ----
 server <- function(input, output) {
   
-  # Histogram of the Old Faithful Geyser Data ----
-  # with requested number of bins
-  # This expression that generates a histogram is wrapped in a call
-  # to renderPlot to indicate that:
-  #
-  # 1. It is "reactive" and therefore should be automatically
-  #    re-executed when inputs (input$bins) change
-  # 2. Its output type is a plot
-  output$distPlot <- renderPlot({
-    
-    x    <- faithful$waiting
-    bins <- seq(min(x), max(x), length.out = input$bins + 1)
-    
-    hist(x, breaks = bins, col = "#75AADB", border = "white",
-         xlab = "Waiting time to next eruption (in mins)",
-         main = "Histogram of waiting times")
-    
+  output$definitions_table <- DT::renderDataTable({
+    dt.definitons
   })
   
+  output$cat_descriptives <- DT::renderDataTable({
+    dt.supply.chain[, .N, by = eval(input$cat_descriptives_in)]
+  })
+
+  output$num_descriptives <- renderPrint({
+    summary(dt.supply.chain[, eval(input$num_descriptives_in), with = FALSE])
+  })
 }
 
 shinyApp(ui = ui, server = server)
