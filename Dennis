@@ -49,6 +49,81 @@ dt.bpo.order.category[, sum(benefit_per_order), category_name == "Sporting Goods
 #need to group categories together so list is smaller. Example categories: Sports, Electronica, Clothing
 
 
+unique(dt.supply.chain$customer_id)
+
+
+# Translate order_country to English
+#dt.order.country <- dt.supply.chain[, order_country]
+#dt.order.country
+
+#setorder(dt.order.country)
+#setorder(dt.supply.chain, order_country)
+
+library(dplyr)
+dt.order.country %>% arrange(order_country) #works
+
+#translate
+#install.packages(translateR) #package translateR not found
+#library(translateR)
+
+#dt.order.country.en <- translate(dataset = dt.order.country,
+#                                content.field = 'char',
+ #                               google.api.key = 'key',
+  #                              source.lang = 'es',
+   #                             target.lang = 'en')
+
+#install.packages(countrycode) #package countrycode not found
+#library(countrycode)
+
+#custom_dict <- data.frame(spanish = countrycode::codelist$cldr.name.es,
+#                          english = countrycode::codelist$cldr.name.en,
+#                          stringsAsFactors = FALSE)
+
+#countries <- c("España", "Alemania")
+
+
+
+unique(dt.supply.chain$latitude)
+
+# leaflet
+dt.supply.chain.100 <- dt.supply.chain[1:100, ]
+
+install.packages("leaflet")
+library(leaflet)
+library(dplyr)
+leaflet() %>% addTiles() %>% addMarkers(data = dt.supply.chain.100, lat = ~latitude, lng = ~longitude) #latitude and longitude are about store, not about order_country
+
+## Need to find and replace DataCo.English.order.customer$order_country with corresponding latitude and longitude of lat.long.country$country
+
+lat.long.country <- read.csv("~/NDA/Group assignment/world_country_and_usa_states_latitude_and_longitude_values.csv", comment.char="#")
+lat.long.country
+
+#dt.sc.lat.long <- bind_cols(dt.supply.chain, lat.long.country)
+
+#dt.sc.lat.long %>%
+# arrange(order_country, country)
+
+#merge(dt.supply.chain[, list(order_country)], lat.long.country[, list(country)], by.x = "order_country", by.y = "country", all.x = TRUE)
+
+dt.lat.long.order.country <- merge(DataCo.English.order.customer, lat.long.country, by.x = "order_country", by.y = "country", all.x = TRUE)
+dt.lat.long.order.country$ID <- seq.int(nrow(dt.lat.long.order.country)) #added ID to be able to connect to unique combinations
+
+
+dt.lat.long.order.country.1000 <- dt.lat.long.order.country[1:1000, ]
+
+# make dataset unique (dummy) order_country so it only appears once per product type
+#dt.lat.long.order.country[, unique(order_country)]
+
+leaflet() %>% addTiles() %>% addMarkers(data = dt.lat.long.order.country.1000, lat = ~latitude, lng = ~longitude)
+
+dt.unique.combo <- unique(dt.lat.long.order.country[, c("order_country","category_name")]) #3136 unique combos
+#dt.unique.combo$ID <- seq.int(nrow(dt.unique.combo)) #wrong, adds generic 1:nrow ID column. Needs to relate to specific iDs
+dt.unique.combo
+
+
+dt.lat.long.unique <- merge(dt.lat.long.order.country, dt.unique.combo, by.x = "ID", by.y = "ID", all.x = TRUE)
+dt.lat.long.unique
+
 
 
 
