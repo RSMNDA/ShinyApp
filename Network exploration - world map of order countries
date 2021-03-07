@@ -1,0 +1,11 @@
+    navbarMenu(title = "Network Exploration",
+      tabPanel(title = "World Map of Order Countries",
+        sidebarLayout(
+          sidebarPanel(
+            selectInput(inputID = "category_name",
+                        label = "Choose a category name to see where the origin of products",
+                        choices = list("Sporting Goods", "Cleats", "Shop By Sport", "Women's Apparal", "Electronics", "Boxing & MMA", "Cardio Equipment")) #need to categorize all 50 category names later (from 50 to like 10)
+          )
+        ),
+      titlePanel("Network Exploration")
+    ),
