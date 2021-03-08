@@ -50,6 +50,12 @@ get.diameter(g.products)
 average.path.length(g.products) # average path length
 transitivity(g.products, type = "average") # average clustering coefficient
 
+# centrality
+degree(g.products)
+closeness(g.products) 
+betweenness(g.products) 
+evcent(g.products)$vector 
+
 
 # The degree distribution --------------------------- 
 ggplot() + 
