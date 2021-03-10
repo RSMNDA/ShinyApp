@@ -1,0 +1,151 @@
+## leaflet integrated in Shiny. Still need to fix selectables showing up in selectInput
+
+
+# Set up the data ----
+library(data.table)
+library(dplyr)
+
+library(shiny)
+library(DT)
+library(ggplot2)
+
+library(shinythemes)
+
+library(leaflet)
+library(leaflet.extras)
+library(sp)
+
+dt.supply.chain.esp <- fread("data/DataCoSupplyChainDataset.csv")
+dt.supply.chain.esp <- setnames(dt.supply.chain.esp, names(dt.supply.chain.esp), tolower(gsub(" ", "_", names(dt.supply.chain.esp), fixed = TRUE)))
+dt.supply.chain.esp <- dt.supply.chain.esp[, !c("customer_country", "category_name", "order_country")]
+
+dt.unique.lat.long <- fread("data/Unique combination country and product.csv")
+
+# Let's add an ID variable. It's called V1 to allow for merging later.
+V1 = c(1:180519)
+dt.supply.chain.esp <- cbind(dt.supply.chain.esp, V1)
+
+# In the original dataset, the country names are Spanish.
+library(janitor)
+dt.english.country.names <- fread("data/english_country_names.csv")
+dt.english.country.names <- janitor::row_to_names(dt.english.country.names, 1)
+dt.supply.chain <- merge(dt.supply.chain.esp, dt.english.country.names, by = "V1")
+
+# Let's remove some variables.
+dt.supply.chain <- dt.supply.chain[, !c("V1", "customer_country", "customer_email", "customer_password", "department_id", "department_name", "order_item_cardprod_id", "latitude", "longitude", "order_region", "order_state", "order_zipcode", "product_description", "product_image")]
+dt.supply.chain = filter(dt.supply.chain, !is.na(customer_zipcode))
+dt.definitons <- fread("data/DescriptionDataCoSupplyChain.csv")
+
+# Set up our network ----
+library(igraph)
+all.products <- dt.supply.chain[, list(name=unique(product_name), type=TRUE)]
+all.customers <- dt.supply.chain[, list(name=unique(customer_id), type=FALSE)]
+all.vertices <- rbind(all.products, all.customers)
+g <- graph.data.frame(dt.supply.chain[, list(product_name, customer_id)], directed=FALSE, vertices=all.vertices)
+
+# To create the bipartite graph goods projection, much memory is needed.
+# To alleviate the shiny servers from this effort, we created the graph and
+# simply saved it into a csv file, from where it can be reconstructed
+# easily.
+df.products <- read.csv("data/g_products.csv")
+df.products <- df.products[-1]
+g.products <- as.undirected(graph_from_data_frame(df.products))
+
+
+
+
+# Define UI for app  ----
+ui <- fluidPage(
+  navbarPage(theme = shinytheme("cerulean"), title = "ChainView",
+    tabPanel(title = "Overview",
+  # App title ----
+      titlePanel("Monitor and improve your supply chain using ChainView."),
+      tags$p("This application was built to explore and analyze the flow of products within the supply chain logistics network. The types of goods include clothing, sporting goods and electronic supplies. The customers are located in the United States & Puerto Rico, whereas the goods are shipped from 164 different countries located in Asia, Europe, North & South America and Europe. In total, 180519 transactions were recorded."),
+      tags$p("To better understand the data and its corresponding network, the 'Descriptive Statistics' tab provides descriptive information regarding the type of transactions, products, order countries, delivery schedule and profitability."),
+      tags$h2("Network Exploration"),
+      tags$p("..."),
+      tags$h2("Managerial Implications"),
+      tags$p("Through the rise of globalization and the ever-increasing quantity of goods being shipped between countries, supply chains have become increasingly complex and difficult to manage. The challenges connected to effectively build and manage a global supply chain have turned into a logistical nightmare. Companies are now exploring big data solutions to shed light on their operations and improve efficiency, whilst lowering their overhead costs. X, provides a solution to this problem, with the use of interactive network exploration techniques. By calculating necessary data-points and information about the logistics network, the decision making of managers is improved. Consequently leading to a more efficient and profitable  supply chain on a global scale."),
+  # Sidebar layout with input and output definitions ----
+    ),
+    navbarMenu(title = "Descriptive Statistics",
+      tabPanel(title = "Variable Definitions",
+        DT::dataTableOutput("definitions_table")
+      ),
+      tabPanel(title = "Categorical Variables",
+        sidebarLayout(
+          sidebarPanel(
+            selectInput(inputId = "cat_descriptives_in", 
+                        label = "Choose a categorical variable to learn more about.",
+                        choices = list("delivery_status", "category_name", "customer_city", "customer_segment", "customer_state", "market", "order_city", "order_country", "order_status", "product_name"))
+          ),
+          mainPanel(
+            DT::dataTableOutput("cat_descriptives"),
+          )
+        )
+      ),
+      tabPanel(title = "Numerical Variables",
+        sidebarLayout(
+          sidebarPanel(
+            selectInput(inputId = "num_descriptives_in", 
+                        label = "Choose a numerical variable to learn more about.",
+                        choices = list("days_for_shipping_(real)", "days_for_shipment_(scheduled)", "benefit_per_order", "sales_per_customer", "order_item_discount_rate", "product_price", "order_item_quantity"))
+          ),
+          mainPanel(
+            verbatimTextOutput("num_descriptives"),
+          )
+        )
+      )
+    ),
+    tabPanel(title = "Network Exploration",
+      titlePanel("Network Exploration"),
+      selectInput("dropdown", "Select Product Category", choices = dt.unique.lat.long$catgory_name, selected = "Cleats"), #dropdown does not show selectables #tried dt.unique.lat.long[1:10, dt.unique.lat.long$catgory_name]
+      leafletOutput("mymap")
+      
+    ),
+    tabPanel(title = "Network Analysis",
+      titlePanel("Network Analysis")
+    )
+  )
+)
+
+# Define server logic required to draw a histogram ----
+server <- function(input, output) {
+  
+  output$definitions_table <- DT::renderDataTable({
+    dt.definitons
+  })
+  
+  output$cat_descriptives <- DT::renderDataTable({
+    dt.supply.chain[, .N, by = eval(input$cat_descriptives_in)]
+  })
+
+  output$num_descriptives <- renderPrint({
+    summary(dt.supply.chain[, eval(input$num_descriptives_in), with = FALSE])
+  })
+  
+  filtered <- reactive({
+    dt.unique.lat.long[dt.unique.lat.long$category_name == input]
+  })
+  
+  
+  
+  output$mymap <- renderLeaflet({
+    leaflet(data = filtered()) %>%
+      addTiles() %>%
+      addMarkers(data = dt.unique.lat.long, lat = dt.unique.lat.long$latitude, lng = dt.unique.lat.long$longitude) %>%
+      clearBounds()
+  })
+  
+  observe({
+    req(input$category_name)
+    sel_category <- dt.unique.lat.long[dt.unique.lat.long$catgory_name == input$category_name,]
+    isolate({
+      leafletProxy("mymap") %>%
+        setView(lng = sel_category$lng, lat = sel_category$lat, zoom = 4)
+    })
+  })
+  
+}
+
+shinyApp(ui = ui, server = server)
