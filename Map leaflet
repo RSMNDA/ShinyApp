@@ -1,6 +1,3 @@
-#Background picture used in proposal: https://user-images.githubusercontent.com/68869483/109824398-14ddea80-7c39-11eb-80e6-5bc797daad19.jpg
-
-
 library(data.table)     # Run once per session
 library(ggplot2)        # Run once per session
 library(igraph)         # Run once per session
@@ -17,6 +14,10 @@ cbind(dt.chain , time = new.columns[,2] , Date = new.columns[,1] )
 dt.supply.chain <- cbind(dt.chain , time = new.columns[,2] , date = new.columns[,1] )
 dt.supply.chain
 
+DataCo.English.order.customer <- read.csv("~\\NDA\\Group assignment\\Order country.csv")
+
+DataCo.English.order.customer
+
 # Network analysis
 # Homophily
 # Are two nodes more likely to be connected if they have the same characteristics (homophily)?
@@ -24,7 +25,12 @@ dt.supply.chain
 unique(dt.supply.chain$order_item_id) 
 
 dt.country.customer.order <- dt.supply.chain[, list(category_name, customer_country, order_country)]
+dt.country.customer.order
 
+#write.csv(dt.country.customer.order, "C:\\Users\\Dennis2\\Desktop\\NDA\\Order country.csv")
+          
+dt.country.customer.order[, unique(order_country)]
+          
 
 # Network Exploration
 # visualization: benefit_per_order in relation to order_country and category_name
@@ -42,12 +48,11 @@ dt.bpo.order.category <- dt.supply.chain[, list(benefit_per_order, category_name
 dt.bpo.order.category
 
 # Average benefit_per_order per category_name per order_country
-category.names <- c(unique(dt.supply.chain$category_name))
+category.names <- list(unique(dt.supply.chain$category_name))
 category.names
 
 dt.bpo.order.category[, sum(benefit_per_order), category_name == "Sporting Goods"] #category_name for each of the 50 categories as selectable drop down menu # List of 50 is too much.
 #need to group categories together so list is smaller. Example categories: Sports, Electronica, Clothing
-
 
 unique(dt.supply.chain$customer_id)
 
@@ -59,8 +64,8 @@ unique(dt.supply.chain$customer_id)
 #setorder(dt.order.country)
 #setorder(dt.supply.chain, order_country)
 
-library(dplyr)
-dt.order.country %>% arrange(order_country) #works
+#library(dplyr)
+#dt.order.country %>% arrange(order_country) #works
 
 #translate
 #install.packages(translateR) #package translateR not found
@@ -108,22 +113,69 @@ lat.long.country
 dt.lat.long.order.country <- merge(DataCo.English.order.customer, lat.long.country, by.x = "order_country", by.y = "country", all.x = TRUE)
 dt.lat.long.order.country$ID <- seq.int(nrow(dt.lat.long.order.country)) #added ID to be able to connect to unique combinations
 
-
 dt.lat.long.order.country.1000 <- dt.lat.long.order.country[1:1000, ]
+dt.lat.long.order.country.3000 <- dt.lat.long.order.country[1:3000, ]
 
 # make dataset unique (dummy) order_country so it only appears once per product type
 #dt.lat.long.order.country[, unique(order_country)]
 
 leaflet() %>% addTiles() %>% addMarkers(data = dt.lat.long.order.country.1000, lat = ~latitude, lng = ~longitude)
+leaflet() %>% addTiles() %>% addMarkers(data = dt.lat.long.order.country.3000, lat = ~latitude, lng = ~longitude)
 
-dt.unique.combo <- unique(dt.lat.long.order.country[, c("order_country","category_name")]) #3136 unique combos
+#dt.unique.combo <- dt.lat.long.order.country[, "latitude", "longitude", by = unique(dt.lat.long.order.country[, c("order_country", "category_name")])] #3136 unique combos
 #dt.unique.combo$ID <- seq.int(nrow(dt.unique.combo)) #wrong, adds generic 1:nrow ID column. Needs to relate to specific iDs
 dt.unique.combo
 
 
-dt.lat.long.unique <- merge(dt.lat.long.order.country, dt.unique.combo, by.x = "ID", by.y = "ID", all.x = TRUE)
-dt.lat.long.unique
+#dt.lat.long.unique <- merge(dt.lat.long.order.country, dt.unique.combo, by.x = "ID", by.y = "ID", all.x = TRUE)
+#dt.lat.long.unique
 
+
+
+#dt.unique.combo <- unique(dt.lat.long.order.country[, c("order_country","category_name")]) #3136 unique combos
+#dt.unique.combo <- dt.lat.long.order.country[, c("latitude", "longitude"), by = unique(dt.lat.long.order.country[, c("order_country", "category_name")]) ]   #3136 unique combos
+
+#library(dplyr)
+#dt.lat.long.order.country %>%
+#  select(ID) %>%
+#  filter(unique(dt.lat.long.order.country[, c("order_country","category_name")]))
+
+#subset(dt.lat.long.order.country, unique(dt.lat.long.order.country[, c("order_country","category_name")]), select = ID )
+
+      
+
+
+#unique(dt.lat.long.order.country[, list(latitude, longitude), by = c(category_name, order_country)])
+               
+# look here: update 8/3/21 
+dt.country.lat.long <- unique(dt.lat.long.order.country[, c("order_country", "latitude", "longitude")])
+dt.country.lat.long                       
+
+dt.unique.lat.long <- merge(dt.country.lat.long, dt.unique.combo, by = "order_country", all = TRUE)
+dt.unique.lat.long
+write.csv(dt.unique.lat.long, "C:\\Users\\Dennis2\\Desktop\\NDA\\Unique combination country and product.csv")
+
+leaflet() %>% addTiles() %>% addMarkers(data = dt.unique.lat.long, lat = ~latitude, lng = ~longitude)
+# every single country on map now
+# checklist: 
+# 1. how to select per categoryname in shiny
+
+# Cardio Equipment
+dt.unique.lat.long.cardio <- dt.unique.lat.long[dt.unique.lat.long$category_name == "Cardio Equipment", ]
+dt.unique.lat.long.cardio
+
+leaflet() %>% addTiles() %>% addMarkers(data = dt.unique.lat.long.cardio, lat = ~latitude, lng = ~longitude)
+
+# Cardio Equipment
+dt.unique.lat.long.sporting <- dt.unique.lat.long[dt.unique.lat.long$category_name == "Sporting Goods", ]
+dt.unique.lat.long.sporting
+
+leaflet() %>% addTiles() %>% addMarkers(data = dt.unique.lat.long.sporting, lat = ~latitude, lng = ~longitude)
+
+
+#fix
+#dt.country.lat.long[dt.country.lat.long == "NA"] <- NA
+#dt.na.fix <- dt.country.lat.long[is.na(dt.country.lat.long$latitude), ] #Order country.csv and world_country_and_usa_states_latitude_and_longitude_values.csv fixed
 
 
 
