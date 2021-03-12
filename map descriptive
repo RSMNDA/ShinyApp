@@ -1,0 +1,269 @@
+# Set up the data ----
+library(data.table)
+library(dplyr)
+dt.supply.chain.esp <- fread("data/DataCoSupplyChainDataset.csv")
+dt.supply.chain.esp <- setnames(dt.supply.chain.esp, names(dt.supply.chain.esp), tolower(gsub(" ", "_", names(dt.supply.chain.esp), fixed = TRUE)))
+dt.supply.chain.esp <- dt.supply.chain.esp[, !c("customer_country", "category_name", "order_country")]
+
+# Let's add an ID variable. It's called V1 to allow for merging later.
+V1 = c(1:180519)
+dt.supply.chain.esp <- cbind(dt.supply.chain.esp, V1)
+
+# In the original dataset, the country names are Spanish.
+library(janitor)
+dt.english.country.names <- fread("data/english_country_names.csv")
+dt.english.country.names <- janitor::row_to_names(dt.english.country.names, 1)
+dt.supply.chain <- merge(dt.supply.chain.esp, dt.english.country.names, by = "V1")
+
+# Let's remove and rename some variables and add the definitons.
+dt.supply.chain <- dt.supply.chain[, !c("V1", "customer_country", "customer_email", "customer_password", "department_id", "department_name", "order_item_cardprod_id", "latitude", "longitude", "order_region", "order_state", "order_zipcode", "product_description", "product_image")]
+dt.supply.chain <- filter(dt.supply.chain, !is.na(customer_zipcode))
+colnames(dt.supply.chain)[20] <- "date"
+dt.definitons <- fread("data/DescriptionDataCoSupplyChain.csv")
+
+# Let's load the dataset for the map.
+dt.map <- fread("data/map_data.csv")
+test <- as.data.frame(unique(dt.map[, 5]))
+test[1, 1]
+
+# Set up our network ----
+library(igraph)
+all.products <- dt.supply.chain[, list(name=unique(product_name), type=TRUE)]
+all.customers <- dt.supply.chain[, list(name=unique(customer_id), type=FALSE)]
+all.vertices <- rbind(all.products, all.customers)
+g <- graph.data.frame(dt.supply.chain[, list(product_name, customer_id)], directed=FALSE, vertices=all.vertices)
+
+# To create the bipartite graph goods projection, much memory is needed.
+# To alleviate the shiny servers from this effort, we created the graph and
+# simply saved it into a csv file, from where it can be reconstructed
+# easily.
+
+df.products <- read.csv("data/g_products.csv")
+df.products <- df.products[-1]
+g.products <- as.undirected(graph_from_data_frame(df.products))
+g.products.example <- induced.subgraph(g.products, c("Titleist Pro V1x Golf Balls", "Perfect Fitness Perfect Rip Deck"))
+plot(g.products.example, edge.width = log(E(g.products.example)$weight))
+
+
+
+library(shiny)
+library(DT)
+library(ggplot2)
+library(shinythemes)
+library(scales)
+library(leaflet)
+
+# Define UI for app  ----
+ui <- navbarPage(theme = shinytheme("cerulean"), title = "Chainnetic",
+    tabPanel(title = "Overview",
+  # App title ----
+      titlePanel("Monitor and improve your supply chain using Chainnetic"),
+      tags$p("This application was built to explore and analyze the flow of products within the supply chain logistics network. The types of goods include clothing, sporting goods and electronic supplies. The customers are located in the United States & Puerto Rico, whereas the goods are shipped from 164 different countries located in Asia, Europe, North & South America and Europe. In total, 180519 transactions were recorded."),
+      tags$p("To better understand the data and its corresponding network, the 'Descriptive Statistics' tab provides descriptive information regarding the type of transactions, products, order countries, delivery schedule and profitability."),
+      tags$img(height = 290, width = 513, src = 'Supply_chain.png'),
+      tags$h2("Network Exploration"),
+      tags$p("..."),
+      tags$h2("Managerial Implications"),
+      tags$p("Through the rise of globalization and the ever-increasing quantity of goods being shipped between countries, supply chains have become increasingly complex and difficult to manage. The challenges connected to effectively build and manage a global supply chain have turned into a logistical nightmare. Companies are now exploring big data solutions to shed light on their operations and improve efficiency, whilst lowering their overhead costs. X, provides a solution to this problem, with the use of interactive network exploration techniques. By calculating necessary data-points and information about the logistics network, the decision making of managers is improved. Consequently leading to a more efficient and profitable  supply chain on a global scale.")
+  # Sidebar layout with input and output definitions ----
+    ),
+    navbarMenu(title = "Descriptive Statistics",
+      tabPanel(title = "Variable Definitions",
+        DT::dataTableOutput("definitions_table")
+      ),
+      tabPanel(title = "Categorical Variables",
+        sidebarLayout(
+          sidebarPanel(
+            selectInput(inputId = "cat_descriptives_in", 
+                        label = "Choose a categorical variable to learn more about.",
+                        choices = list("delivery_status", "category_name", "customer_city", "customer_segment", "customer_state", "market", "order_city", "order_country", "order_status", "product_name"))
+          ),
+          mainPanel(
+            DT::dataTableOutput("cat_descriptives")
+          )
+        )
+      ),
+      tabPanel(title = "Numerical Variables",
+        sidebarLayout(
+          sidebarPanel(
+            selectInput(inputId = "num_descriptives_in", 
+                        label = "Choose a numerical variable to learn more about.",
+                        choices = list("days_for_shipping_(real)", "days_for_shipment_(scheduled)", "benefit_per_order", "sales_per_customer", "order_item_discount_rate", "product_price", "order_item_quantity"))
+          ),
+          mainPanel(
+            verbatimTextOutput("num_descriptives")
+          )
+        )
+      )
+    ),
+    navbarMenu(title = "Network Exporation",
+      tabPanel(title = "Map Export Exploration",
+        sidebarPanel(
+                 selectInput(inputId = "map_in",
+                             label = "Select Product Category to see which countries export what goods.",
+                             choices = as.data.frame(unique(dt.map[, 5])),
+                             ), #dropdown does not show selectables #tried dt.unique.lat.long[1:10, dt.unique.lat.long$catgory_name]
+      ),
+      
+      mainPanel(
+        leafletOutput("map_out"),
+        #DT::dataTableOutput("map_descriptives"),
+        tags$p("Having insight in where your products are coming from can help a company make better decisions. This page can provide valuable information to determine optimized warehouse locations."),
+        tags$p("By selecting a product category, the map shows you whether goods are exported from specific continents or have rather global origins."),
+      )
+    ),
+    tabPanel(title = "Export Descriptives",
+        sidebarPanel(
+                selectInput(inputId = "map_in",
+                            label = "Select Product Category to see which countries export what goods.",
+                            choices = as.data.frame(unique(dt.map[, 5])),
+                            selected =  dt.map[, 5] == "Water Sports"  #dt.map[2, dt.map[, 5]] #not selecting Basketball as default
+                            ),
+      ),
+      mainPanel(
+        DT::dataTableOutput("map_descriptives")  
+        )
+    )
+    ),
+    navbarMenu(title = "Network Exploration",
+      tabPanel(title = "Product Network",
+        sidebarPanel(
+          tags$p("Note, that may not have been transactions on all dates. If there weren't any transactions, shiny will throw a 'double vertex' error."),
+          selectInput(inputId = "day", 
+                      label = "Choose a day.",
+                      choices = as.list(c(1:31))
+          ),
+          selectInput(inputId = "month", 
+                      label = "Choose a month.",
+                      choices = as.list(c(1:12))
+          ),
+          selectInput(inputId = "year", 
+                      label = "Choose a year.",
+                      choices = as.list(c(2015:2018))
+          ),
+          selectInput("exploration_nodes", 
+                      label = "Your graph may be a bit cluttered. Do you want to show all Nodes?",
+                      choices = c("Yes", "No")
+          )
+        ),
+        mainPanel(
+          plotOutput("graph_exploration")
+        )      
+      )
+    ),
+    tabPanel(title = "Product Recommendation",
+      tags$p("On this page, you have the option to select a good in the dataset, to get inside on goods, that customers often buy along with it. You also have the option to show the connections among the adjecent goods. If you choose not to do so, the edge weight represents the proportion that the respective goods have been bought together compared to its total joint sales. You can choose to display up to 15 adjacent goods. For more goods, the graph becomes increasingly cluttered."),
+      sidebarPanel(
+        selectInput(inputId = "graph_analysis_in", 
+                    label = "Choose a good to return adjacent goods. These goods have commonly been bought by the same customers. This allows for recommending goods to customers.",
+                    choices = as.list(unique(df.products$from))
+        ),
+        selectInput(inputId = "what_graph",
+                    label = "Should the graph also display connections among neighbors?",
+                    choices = list("Yes", "No")
+        ),
+        sliderInput("how_many_nodes", 
+                    label = "How many adjacent goods do you want to show?",
+                    min = 1, max = 15, value = 5, step = 1
+        )
+      ),
+      mainPanel(
+        plotOutput("graph_analysis_network"),
+        DT::dataTableOutput("graph_analysis_table")
+      )
+    ),
+    tabPanel(title = "About Us",
+      titlePanel("About Us"),
+        titlePanel("Meet the Chainnetic team"),
+        tags$p("Feel free to contact us for any questions or concerns"),
+        tags$h3("Moritz Bahner"),
+        tags$img(),
+        tags$h3("Niklas Finken"),
+        tags$img(),
+        tags$h3("Danielle van Helden"),
+        tags$img(),
+        tags$h3("Dennis Vissenberg"),
+        tags$img()
+    )
+)
+
+
+# Define server logic required to draw a histogram ----
+server <- function(input, output) {
+  
+  output$definitions_table <- DT::renderDataTable({
+    dt.definitons
+  })
+  
+  output$cat_descriptives <- DT::renderDataTable({
+    dt.supply.chain[, .N, by = eval(input$cat_descriptives_in)]
+  })
+
+  output$num_descriptives <- renderPrint({
+    summary(dt.supply.chain[, eval(input$num_descriptives_in), with = FALSE])
+  })
+  
+  output$graph_exploration <- renderPlot({
+    # Make a data table by dates.
+    chosen_date <- paste(input$day, input$month, input$year, sep="/", collapse = NULL)
+    dt.supply.chain.day <- dt.supply.chain[dt.supply.chain$date %like% chosen_date, ]
+    all.products.day <- dt.supply.chain.day[, list(name=unique(product_name), type=TRUE)]
+    all.customers.day <- dt.supply.chain.day[, list(name=unique(customer_id), type=FALSE)]
+    all.vertices.day <- rbind(all.products.day, all.customers.day)
+    g.day <- graph.data.frame(dt.supply.chain.day[, list(product_name, customer_id)], directed=FALSE, vertices=all.vertices.day)
+    g.day.products <- bipartite.projection(g.day)$proj2
+    # Implement the mechanic that allows to show a subset of nodes.
+    if(input$exploration_nodes == "No"){
+      g.day.products.example <- subgraph.edges(g.day.products, eids = random_list, delete.vertices = TRUE)
+      #g.day.products.example$layout <- layout_randomly(g.products.example)
+      plot(g.day.products.example)
+    }
+    if(input$exploration_nodes == "Yes"){
+      #g.day.products$layout <- layout_randomly(g.products)
+      plot(g.day.products)
+    }
+  })
+  
+  output$map_out <- renderLeaflet({
+    chosen_category = input$map_in
+    dt.map.chosen <- dt.map[dt.map$category_name == chosen_category, ]
+    leaflet() %>% addTiles() %>% addMarkers(data = dt.map.chosen, lat = ~latitude, lng = ~longitude)
+  })
+  
+  output$map_descriptives <- DT::renderDataTable({
+    dt.map[, .N, by = eval(input$map_in)]
+  })
+  
+  network_analysis_data <- reactive({
+    df.reverse <- df.products
+    colnames(df.reverse) <- (c("to", "from", "weight"))
+    df.products.complete <- merge(df.products, df.reverse, all = TRUE)
+    df.focal.product <- df.products.complete[df.products.complete$from == input$graph_analysis_in, ]
+    df.focal.product <- df.focal.product[order(-df.focal.product$weight),][1:input$how_many_nodes,]
+  })
+
+  output$graph_analysis_network <- renderPlot({
+    df.focal.product <- network_analysis_data()
+    answer = input$what_graph
+    if (answer == "Yes"){
+      g.focal.product <- induced_subgraph(g.products, c(df.focal.product$to, df.focal.product$from[1]))
+      g.focal.product$layout <- layout_as_star(g.focal.product, center = input$graph_analysis_in)
+      plot(g.focal.product, edge.width = 0.5*log(E(g.focal.product)$weight), vertex.label.dist = 2.5, vertex.color = rgb(255, 246, 74, maxColorValue = 255), vertex.label.color = "black", edge.color = "light gray")
+    }
+    else {
+      g.focal.product <- as.undirected(graph_from_data_frame(df.focal.product))
+      g.focal.product$layout <- layout_as_star(g.focal.product, center = input$graph_analysis_in)
+      plot(g.focal.product, edge.width = (50*(E(g.focal.product)$weight) / sum(df.focal.product$weight)), vertex.label.dist = 2.5, vertex.color = rgb(255, 246, 74, maxColorValue = 255), vertex.label.color = "black", edge.color = "light gray")
+    }
+  })
+  
+  output$graph_analysis_table <- DT::renderDataTable({
+    df.focal.product <- network_analysis_data()
+    df.focal.product <- mutate(df.focal.product, proportion_of_sales = scales::percent(round(weight/sum(df.focal.product$weight), 3)))
+    dt.focal.product <- as.data.table(df.focal.product)[, 2:4]
+    colnames(dt.focal.product) <- c("Customers who bought your chosen good, also bought...", "How often?", "As a proportion of total sales with adjacent goods.")
+    dt.focal.product
+  })
+}
+
+shinyApp(ui = ui, server = server)
