@@ -35,7 +35,7 @@
   
   output$order_status_descriptives <- DT::renderDataTable({
     dt.status.products <- as.data.frame(cbind(betweenness(g.fraud.products), closeness(g.fraud.products)))
-    setnames(dt.status.products, "V1", "Betweeness")
-    setnames(dt.status.products, "V2", "Closeness")
+    setnames(dt.status.products, "V1", "Betweeness Centrality")
+    setnames(dt.status.products, "V2", "Closeness Centrality")
   })
   
