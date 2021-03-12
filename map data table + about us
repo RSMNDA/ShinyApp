@@ -109,7 +109,7 @@ ui <- navbarPage(theme = shinytheme("cerulean"), title = "Chainnetic",
         #DT::dataTableOutput("map_descriptives")
       )
     ),
-    tabPanel(title = "Export Descriptives",
+    tabPanel(title = "Export Descriptives", # remove this tabPanel if datatable is able to be shown on the same page of map
         sidebarPanel(
                 selectInput(inputId = "map_in",
                             label = "Select Product Category to see which countries export what goods.",
