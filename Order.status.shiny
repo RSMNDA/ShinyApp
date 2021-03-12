@@ -1,0 +1,41 @@
+ tabPanel(title = "Order Status Network",
+               sidebarLayout(
+                 sidebarPanel(
+                   selectInput(inputId = "order_status", 
+                               label = "Explore the network of products with a specific order status",
+                               choices = list("COMPLETE", "PENDING", "CLOSED", "PENDING_PAYMENT", "CANCELED", "PROCESSING", "SUSPECTED_FRAUD", "ON_HOLD", "PAYMENT_REVIEW")
+                   )
+                   ),
+                   mainPanel(
+                     plotOutput("order_status_network"),
+                     DT::dataTableOutput("order_status_descriptives")
+                   ),
+               )
+    ),
+    
+    
+    
+     output$order_status_network <- renderPlot({
+    #Make data table by order status
+    chosen_order_status <- paste(input$order_status)
+    dt.supply.chain.status <- dt.supply.chain[dt.supply.chain$order_status %like% chosen_order_status,]
+    all.products.status <- dt.supply.chain.status[, list(name=unique(product_name), type=TRUE)]
+    all.customers.status <- dt.supply.chain.status[, list(name=unique(customer_id), type=FALSE)]
+    all.vertices.status <- rbind(all.products.status, all.customers.status)
+    g.order.status <- graph.data.frame(dt.supply.chain.status[, list(product_name, customer_id)], directed=FALSE, vertices=all.vertices.status)
+    g.order.status.products <- bipartite.projection(g.order.status)$proj2
+    delete.vertices(g.order.status.products, degree(g.order.status.products) == 0)
+    
+    g.order.status.products$layout <- layout_as_star(g.order.status.products)
+    plot(g.order.status.products, edge.width = 0.5*log(E(g.order.status.products)$weight), vertex.label.dist = 2.5, vertex.color = rgb(255, 246, 74, maxColorValue = 255), vertex.label.color = "black", edge.color = "light gray")
+    
+    plot(g.order.status.products)
+    }
+  )
+  
+  output$order_status_descriptives <- DT::renderDataTable({
+    dt.status.products <- as.data.frame(cbind(betweenness(g.fraud.products), closeness(g.fraud.products)))
+    setnames(dt.status.products, "V1", "Betweeness")
+    setnames(dt.status.products, "V2", "Closeness")
+  })
+  
