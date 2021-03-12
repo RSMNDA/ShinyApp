@@ -26,10 +26,8 @@
     g.order.status.products <- bipartite.projection(g.order.status)$proj2
     delete.vertices(g.order.status.products, degree(g.order.status.products) == 0)
     
-    g.order.status.products$layout <- layout_as_star(g.order.status.products)
     plot(g.order.status.products, edge.width = 0.5*log(E(g.order.status.products)$weight), vertex.label.dist = 2.5, vertex.color = rgb(255, 246, 74, maxColorValue = 255), vertex.label.color = "black", edge.color = "light gray")
     
-    plot(g.order.status.products)
     }
   )
   
