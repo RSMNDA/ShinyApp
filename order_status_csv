@@ -1,0 +1,130 @@
+dt.supply.chain.fraud <- filter(dt.supply.chain, order_status == "SUSPECTED_FRAUD" ) 
+all.fraud.products <- dt.supply.chain.fraud [, list(name = unique(product_name),  type = TRUE)]
+all.fraud.customers <- dt.supply.chain.fraud [, list(name = unique(customer_id), type = FALSE)]
+all.vertices <- rbind(all.fraud.products, all.fraud.customers)
+g.fraud.supply.chain <- graph.data.frame(dt.supply.chain.fraud [, list(product_name, customer_id)], directed=FALSE, vertices=all.vertices)
+g.fraud.products <- bipartite.projection(g.fraud.supply.chain)$proj2
+dt.g.fraud.products <- as.data.frame(get.edgelist(g.fraud.products))
+write.csv(dt.g.fraud.products, "data/g_fraud_products.csv")
+
+df.fraud.products <- read.csv("data/g_fraud_products.csv")
+df.fraud.products <- df.fraud.products[-1]
+g.fraud.products <- as.undirected((graph_from_data_frame(df.fraud.products)))
+# To check that it works
+g.fraud.products.example <- induced.subgraph(g.fraud.products, c("Nike Men's Free 5.0+ Running Shoe", "Perfect Fitness Perfect Rip Deck"))
+plot(g.fraud.products.example)
+##
+
+dt.supply.chain.complete <- filter(dt.supply.chain, order_status == "COMPLETE" ) 
+all.complete.products <- dt.supply.chain.complete [, list(name = unique(product_name),  type = TRUE)]
+all.complete.customers <- dt.supply.chain.complete [, list(name = unique(customer_id), type = FALSE)]
+all.vertices.complete <- rbind(all.complete.products, all.complete.customers)
+g.complete.supply.chain <- graph.data.frame(dt.supply.chain.complete [, list(product_name, customer_id)], directed=FALSE, vertices=all.vertices.complete)
+g.complete.products <- bipartite.projection(g.complete.supply.chain)$proj2
+dt.g.complete.products <- as.data.frame(get.edgelist(g.complete.products))
+write.csv(dt.g.complete.products, "data/g_complete_products.csv")
+
+df.complete.products <- read.csv("data/g_complete_products.csv")
+df.complete.products <- df.complete.products[-1]
+g.complete.products <- as.undirected((graph_from_data_frame(df.complete.products)))
+
+#
+dt.supply.chain.pending <- filter(dt.supply.chain, order_status == "PENDING" ) 
+all.pending.products <- dt.supply.chain.pending [, list(name = unique(product_name),  type = TRUE)]
+all.pending.customers <- dt.supply.chain.pending [, list(name = unique(customer_id), type = FALSE)]
+all.vertices.pending <- rbind(all.pending.products, all.pending.customers)
+g.pending.supply.chain <- graph.data.frame(dt.supply.chain.pending [, list(product_name, customer_id)], directed=FALSE, vertices=all.vertices.pending)
+g.pending.products <- bipartite.projection(g.pending.supply.chain)$proj2
+dt.g.pending.products <- as.data.frame(get.edgelist(g.pending.products))
+write.csv(dt.g.pending.products, "data/g_pending_products.csv")
+
+df.pending.products <- read.csv("data/g_pending_products.csv")
+df.pending.products <- df.pending.products[-1]
+g.pending.products <- as.undirected((graph_from_data_frame(df.pending.products)))
+
+#
+
+dt.supply.chain.closed <- filter(dt.supply.chain, order_status == "CLOSED" ) 
+all.closed.products <- dt.supply.chain.closed [, list(name = unique(product_name),  type = TRUE)]
+all.closed.customers <- dt.supply.chain.closed [, list(name = unique(customer_id), type = FALSE)]
+all.vertices.closed <- rbind(all.closed.products, all.closed.customers)
+g.closed.supply.chain <- graph.data.frame(dt.supply.chain.closed [, list(product_name, customer_id)], directed=FALSE, vertices=all.vertices.closed)
+g.closed.products <- bipartite.projection(g.closed.supply.chain)$proj2
+dt.g.closed.products <- as.data.frame(get.edgelist(g.closed.products))
+write.csv(dt.g.closed.products, "data/g_closed_products.csv")
+
+df.closed.products <- read.csv("data/g_closed_products.csv")
+df.closed.products <- df.closed.products[-1]
+g.closed.products <- as.undirected((graph_from_data_frame(df.closed.products)))
+
+#
+
+dt.supply.chain.pending_payment <- filter(dt.supply.chain, order_status == "PENDING_PAYMENT" ) 
+all.pending_payment.products <- dt.supply.chain.pending_payment [, list(name = unique(product_name),  type = TRUE)]
+all.pending_payment.customers <- dt.supply.chain.pending_payment [, list(name = unique(customer_id), type = FALSE)]
+all.vertices.pending_payment <- rbind(all.pending_payment.products, all.pending_payment.customers)
+g.pending_payment.supply.chain <- graph.data.frame(dt.supply.chain.pending_payment [, list(product_name, customer_id)], directed=FALSE, vertices=all.vertices.pending_payment)
+g.pending_payment.products <- bipartite.projection(g.pending_payment.supply.chain)$proj2
+dt.g.pending_payment.products <- as.data.frame(get.edgelist(g.pending_payment.products))
+write.csv(dt.g.pending_payment.products, "data/g_pending_payment_products.csv")
+
+df.pending_payment.products <- read.csv("data/g_pending_payment_products.csv")
+df.pending_payment.products <- df.pending_payment.products[-1]
+g.pending_payment.products <- as.undirected((graph_from_data_frame(df.pending_payment.products)))
+#
+
+dt.supply.chain.Canceled <- filter(dt.supply.chain, order_status == "CANCELED" ) 
+all.Canceled.products <- dt.supply.chain.Canceled [, list(name = unique(product_name),  type = TRUE)]
+all.Canceled.customers <- dt.supply.chain.Canceled [, list(name = unique(customer_id), type = FALSE)]
+all.vertices.Canceled <- rbind(all.Canceled.products, all.Canceled.customers)
+g.Canceled.supply.chain <- graph.data.frame(dt.supply.chain.Canceled [, list(product_name, customer_id)], directed=FALSE, vertices=all.vertices.Canceled)
+g.Canceled.products <- bipartite.projection(g.Canceled.supply.chain)$proj2
+dt.g.Canceled.products <- as.data.frame(get.edgelist(g.Canceled.products))
+write.csv(dt.g.Canceled.products, "data/g_Canceled_products.csv")
+
+df.Canceled.products <- read.csv("data/g_Canceled_products.csv")
+df.Canceled.products <- df.Canceled.products[-1]
+g.Canceled.products <- as.undirected((graph_from_data_frame(df.Canceled.products)))
+
+#
+
+dt.supply.chain.processing <- filter(dt.supply.chain, order_status == "PROCESSING" ) 
+all.processing.products <- dt.supply.chain.processing [, list(name = unique(product_name),  type = TRUE)]
+all.processing.customers <- dt.supply.chain.processing [, list(name = unique(customer_id), type = FALSE)]
+all.vertices.processing <- rbind(all.processing.products, all.processing.customers)
+g.processing.supply.chain <- graph.data.frame(dt.supply.chain.processing [, list(product_name, customer_id)], directed=FALSE, vertices=all.vertices.processing)
+g.processing.products <- bipartite.projection(g.processing.supply.chain)$proj2
+dt.g.processing.products <- as.data.frame(get.edgelist(g.processing.products))
+write.csv(dt.g.processing.products, "data/g_processing_products.csv")
+
+df.processing.products <- read.csv("data/g_processing_products.csv")
+df.processing.products <- df.processing.products[-1]
+g.processing.products <- as.undirected((graph_from_data_frame(df.processing.products)))
+#
+dt.supply.chain.On_hold <- filter(dt.supply.chain, order_status == "ON_HOLD" ) 
+all.On_hold.products <- dt.supply.chain.On_hold [, list(name = unique(product_name),  type = TRUE)]
+all.On_hold.customers <- dt.supply.chain.On_hold [, list(name = unique(customer_id), type = FALSE)]
+all.vertices.On_hold <- rbind(all.On_hold.products, all.On_hold.customers)
+g.On_hold.supply.chain <- graph.data.frame(dt.supply.chain.On_hold [, list(product_name, customer_id)], directed=FALSE, vertices=all.vertices.On_hold)
+g.On_hold.products <- bipartite.projection(g.On_hold.supply.chain)$proj2
+dt.g.On_hold.products <- as.data.frame(get.edgelist(g.On_hold.products))
+write.csv(dt.g.On_hold.products, "data/g_On_hold_products.csv")
+
+df.On_hold.products <- read.csv("data/g_On_hold_products.csv")
+df.On_hold.products <- df.On_hold.products[-1]
+g.On_hold.products <- as.undirected((graph_from_data_frame(df.On_hold.products)))
+#
+
+dt.supply.chain.Payment_review <- filter(dt.supply.chain, order_status == "PAYMENT_REVIEW" ) 
+all.Payment_review.products <- dt.supply.chain.Payment_review [, list(name = unique(product_name),  type = TRUE)]
+all.Payment_review.customers <- dt.supply.chain.Payment_review [, list(name = unique(customer_id), type = FALSE)]
+all.vertices.Payment_review <- rbind(all.Payment_review.products, all.Payment_review.customers)
+g.Payment_review.supply.chain <- graph.data.frame(dt.supply.chain.Payment_review [, list(product_name, customer_id)], directed=FALSE, vertices=all.vertices.Payment_review)
+g.Payment_review.products <- bipartite.projection(g.Payment_review.supply.chain)$proj2
+dt.g.Payment_review.products <- as.data.frame(get.edgelist(g.Payment_review.products))
+write.csv(dt.g.Payment_review.products, "data/g_Payment_review_products.csv")
+
+df.Payment_review.products <- read.csv("data/g_Payment_review_products.csv")
+df.Payment_review.products <- df.Payment_review.products[-1]
+g.Payment_review.products <- as.undirected((graph_from_data_frame(df.Payment_review.products)))
+
