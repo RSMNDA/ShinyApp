@@ -1,0 +1,87 @@
+ output$order_status_descriptives <- DT::renderDataTable({
+    chosen_order_status <- paste(input$order_status)
+    if(chosen_order_status == "SUSPECTED_FRAUD"){
+      dt.betweenness.order.status <- as.data.frame(betweenness(g.fraud.products))
+      dt.closeness.order.status <- as.data.frame(closeness(g.fraud.products))
+      dt.evcent.order.status <- as.data.frame(evcent(g.fraud.products))
+      dt.status.products <- as.data.frame(cbind(dt.betweenness.order.status, dt.closeness.order.status, dt.evcent.order.status[1]))
+      setnames(dt.status.products, "betweenness(g.fraud.products)", "Betweeness")
+      setnames(dt.status.products, "closeness(g.fraud.products)", "Closeness")
+      dt.status.products
+    }
+    else if(chosen_order_status == "COMPLETE"){
+      dt.betweenness.order.status <- as.data.frame(betweenness(g.complete.products))
+      dt.closeness.order.status <- as.data.frame(closeness(g.complete.products))
+      dt.evcent.order.status <- as.data.frame(evcent(g.complete.products))
+      dt.status.products <- as.data.frame(cbind(dt.betweenness.order.status, dt.closeness.order.status, dt.evcent.order.status[1]))
+      setnames(dt.status.products, "betweenness(g.complete.products)", "Betweeness")
+      setnames(dt.status.products, "closeness(g.complete.products)", "Closeness")
+      dt.status.products
+    }
+    else if(chosen_order_status == "PENDING"){
+      dt.betweenness.order.status <- as.data.frame(betweenness(g.pending.products))
+      dt.closeness.order.status <- as.data.frame(closeness(g.pending.products))
+      dt.evcent.order.status <- as.data.frame(evcent(g.pending.products))
+      dt.status.products <- as.data.frame(cbind(dt.betweenness.order.status, dt.closeness.order.status, dt.evcent.order.status[1]))
+      setnames(dt.status.products, "betweenness(g.pending.products)", "Betweeness")
+      setnames(dt.status.products, "closeness(g.pending.products)", "Closeness")
+      dt.status.products
+    }
+    else if(chosen_order_status == "CLOSED"){
+      dt.betweenness.order.status <- as.data.frame(betweenness(g.closed.products))
+      dt.closeness.order.status <- as.data.frame(closeness(g.closed.products))
+      dt.evcent.order.status <- as.data.frame(evcent(g.closed.products))
+      dt.status.products <- as.data.frame(cbind(dt.betweenness.order.status, dt.closeness.order.status, dt.evcent.order.status[1]))
+      setnames(dt.status.products, "betweenness(g.closed.products)", "Betweeness")
+      setnames(dt.status.products, "closeness(g.closed.products)", "Closeness")
+      dt.status.products
+    }
+    else if(chosen_order_status == "PENDING_PAYMENT"){
+      dt.betweenness.order.status <- as.data.frame(betweenness(g.pending_payment.products))
+      dt.closeness.order.status <- as.data.frame(closeness(g.pending_payment.products))
+      dt.evcent.order.status <- as.data.frame(evcent(g.pending_payment.products))
+      dt.status.products <- as.data.frame(cbind(dt.betweenness.order.status, dt.closeness.order.status, dt.evcent.order.status[1]))
+      setnames(dt.status.products, "betweenness(g.pending_payment.products)", "Betweeness")
+      setnames(dt.status.products, "closeness(g.pending_payment.products)", "Closeness")
+      dt.status.products
+    }
+    else if(chosen_order_status == "CANCELED"){
+      dt.betweenness.order.status <- as.data.frame(betweenness(g.Canceled.products))
+      dt.closeness.order.status <- as.data.frame(closeness(g.Canceled.products))
+      dt.evcent.order.status <- as.data.frame(evcent(g.Canceled.products))
+      dt.status.products <- as.data.frame(cbind(dt.betweenness.order.status, dt.closeness.order.status, dt.evcent.order.status[1]))
+      setnames(dt.status.products, "betweenness(g.Canceled.products)", "Betweeness")
+      setnames(dt.status.products, "closeness(g.Canceled.products)", "Closeness")
+      dt.status.products
+    }
+    else if(chosen_order_status == "PROCESSING"){
+      dt.betweenness.order.status <- as.data.frame(betweenness(g.processing.products))
+      dt.closeness.order.status <- as.data.frame(closeness(g.processing.products))
+      dt.evcent.order.status <- as.data.frame(evcent(g.processing.products))
+      dt.status.products <- as.data.frame(cbind(dt.betweenness.order.status, dt.closeness.order.status, dt.evcent.order.status[1]))
+      setnames(dt.status.products, "betweenness(g.processing.products)", "Betweeness")
+      setnames(dt.status.products, "closeness(g.processing.products)", "Closeness")
+      dt.status.products
+    }
+    else if(chosen_order_status == "ON_HOLD"){
+      dt.betweenness.order.status <- as.data.frame(betweenness(g.On_hold.products))
+      dt.closeness.order.status <- as.data.frame(closeness(g.On_hold.products))
+      dt.evcent.order.status <- as.data.frame(evcent(g.On_hold.products))
+      dt.status.products <- as.data.frame(cbind(dt.betweenness.order.status, dt.closeness.order.status, dt.evcent.order.status[1]))
+      setnames(dt.status.products, "betweenness(g.On_hold.products)", "Betweeness")
+      setnames(dt.status.products, "closeness(g.On_hold.products)", "Closeness")
+      dt.status.products
+    }
+    else if(chosen_order_status == "PAYMENT_REVIEW"){
+      dt.betweenness.order.status <- as.data.frame(betweenness(g.Payment_review.products))
+      dt.closeness.order.status <- as.data.frame(closeness(g.Payment_review.products))
+      dt.evcent.order.status <- as.data.frame(evcent(g.Payment_review.products))
+      dt.status.products <- as.data.frame(cbind(dt.betweenness.order.status, dt.closeness.order.status, dt.evcent.order.status[1]))
+      setnames(dt.status.products, "betweenness(g.Payment_review.products)", "Betweeness")
+      setnames(dt.status.products, "closeness(g.Payment_review.products)", "Closeness")
+      dt.status.products
+    }
+    else{print("Please select an order status from the drop down menu")}
+
+  })
+  
