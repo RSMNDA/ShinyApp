@@ -1,0 +1,42 @@
+  output$order_status_network <- renderPlot({
+    #Make data table by order status
+    chosen_order_status <- paste(input$order_status)
+      if(chosen_order_status == "SUSPECTED_FRAUD"){
+        plot(g.fraud.products, edge.width = 0.5*log(E(g.fraud.products)), vertex.label.dist = 2.5, vertex.color = rgb(255, 246, 74, maxColorValue = 255), vertex.label.color = "black", edge.color = "light gray")
+      }
+        else if(chosen_order_status == "COMPLETE"){
+          plot(g.complete.products, edge.width = 0.5*log(E(g.complete.products)), vertex.label.dist = 2.5, vertex.color = rgb(255, 246, 74, maxColorValue = 255), vertex.label.color = "black", edge.color = "light gray")
+      }
+        else if(chosen_order_status == "PENDING"){
+          plot(g.pending.products, edge.width = 0.5*log(E(g.pending.products)), vertex.label.dist = 2.5, vertex.color = rgb(255, 246, 74, maxColorValue = 255), vertex.label.color = "black", edge.color = "light gray")
+      }
+        else if(chosen_order_status == "CLOSED"){
+        plot(g.closed.products, edge.width = 0.5*log(E(g.closed.products)), vertex.label.dist = 2.5, vertex.color = rgb(255, 246, 74, maxColorValue = 255), vertex.label.color = "black", edge.color = "light gray")
+      }
+        else if(chosen_order_status == "PENDING_PAYMENT"){
+        plot(g.pending_payment.products, edge.width = 0.5*log(E(g.pending_payment.products)), vertex.label.dist = 2.5, vertex.color = rgb(255, 246, 74, maxColorValue = 255), vertex.label.color = "black", edge.color = "light gray")
+      }
+        else if(chosen_order_status == "CANCELED"){
+        plot(g.canceled.products, edge.width = 0.5*log(E(g.canceled.products)), vertex.label.dist = 2.5, vertex.color = rgb(255, 246, 74, maxColorValue = 255), vertex.label.color = "black", edge.color = "light gray")
+      }
+        else if(chosen_order_status == "PROCESSING"){
+        plot(g.processing.products, edge.width = 0.5*log(E(g.processing.products)), vertex.label.dist = 2.5, vertex.color = rgb(255, 246, 74, maxColorValue = 255), vertex.label.color = "black", edge.color = "light gray")
+      }
+        else if(chosen_order_status == "ON_HOLD"){
+        plot(g.On_hold.products, edge.width = 0.5*log(E(g.On_hold.products)), vertex.label.dist = 2.5, vertex.color = rgb(255, 246, 74, maxColorValue = 255), vertex.label.color = "black", edge.color = "light gray")
+      }
+        else if(chosen_order_status == "PAYMENT_REVIEW"){
+        plot(g.Payment_review.products, edge.width = 0.5*log(E(g.Payment_review.products)), vertex.label.dist = 2.5, vertex.color = rgb(255, 246, 74, maxColorValue = 255), vertex.label.color = "black", edge.color = "light gray")
+      }
+        else{print("Please select an order status from the drop down menu")}
+      
+      
+    }
+  )
+  
+  output$order_status_descriptives <- DT::renderDataTable({
+    dt.status.products <- as.data.frame(cbind(betweenness(g.fraud.products), closeness(g.fraud.products) ))
+    setnames(dt.status.products, "V1", "Betweeness")
+    setnames(dt.status.products, "V2", "Closeness")
+  })
+  
